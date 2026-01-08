@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Movie{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="heading">{{ movie.title }}</h1>
+  <p class="description">Edit Movie Rating</p>
+
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.rating.label(class="form-label text-warning") }}
+      {{ form.rating(class="form-control") }}
+      {% for error in form.rating.errors %}
+        <div class="text-danger">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.review.label(class="form-label text-info") }}
+      {{ form.review(class="form-control") }}
+      {% for error in form.review.errors %}
+        <div class="text-danger">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="button">Done</button>
+  </form>
+</div>
+{% endblock %}
