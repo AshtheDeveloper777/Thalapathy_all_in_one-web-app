@@ -6,38 +6,22 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import requests
 import os
-from dotenv import load_dotenv
 
 
-TMDB_SEARCH_URL = os.getenv("TMDB_SEARCH_URL")
-TMDB_MOVIE_DETAILS_URL = os.getenv("TMDB_MOVIE_DETAILS_URL")
-TMDB_IMAGE_BASE_URL = os.getenv("TMDB_IMAGE_BASE_URL")
-API_KEY =os.getenv("API_KEY")
-response = requests.get(TMDB_SEARCH_URL )
-data = response.json()
-print(data)
+TMDB_SEARCH_URL = os.environ.get("TMDB_SEARCH_URL")
+TMDB_MOVIE_DETAILS_URL = os.environ.get("TMDB_MOVIE_DETAILS_URL")
+TMDB_IMAGE_BASE_URL = os.environ.get("TMDB_IMAGE_BASE_URL")
+API_KEY =os.environ.get("API_KEY")
+
 
 
 app = Flask(__name__)
 #app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 print("SECRET_KEY =", app.config["SECRET_KEY"])
-if not API_KEY:
-    raise RuntimeError("TMDB_API_KEY missing")
-#
-def tmdb_get(url, params=None):
-    params = params or {}
-    params["api_key"] = API_KEY
 
-    r = requests.get(url, params=params, timeout=10)
-    data = r.json()
-
-    if r.status_code != 200 or data.get("success") is False:
-        return None, data.get("status_message", "TMDB error")
-
-    return data, None
 
 
 Bootstrap(app)
