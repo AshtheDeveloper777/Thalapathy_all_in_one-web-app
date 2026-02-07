@@ -26,7 +26,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 print("SECRET_KEY =", app.config["SECRET_KEY"])
 if not API_KEY:
     raise RuntimeError("TMDB_API_KEY missing")
-
+#
 def tmdb_get(url, params=None):
     params = params or {}
     params["api_key"] = API_KEY
