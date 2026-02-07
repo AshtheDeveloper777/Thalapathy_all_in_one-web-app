@@ -13,6 +13,9 @@ TMDB_SEARCH_URL = os.getenv("TMDB_SEARCH_URL")
 TMDB_MOVIE_DETAILS_URL = os.getenv("TMDB_MOVIE_DETAILS_URL")
 TMDB_IMAGE_BASE_URL = os.getenv("TMDB_IMAGE_BASE_URL")
 API_KEY =os.getenv("API_KEY")
+response = requests.get(TMDB_SEARCH_URL )
+data = response.json()
+print(data)
 
 
 app = Flask(__name__)
