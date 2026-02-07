@@ -1,16 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
 # Virtual environment
 venv/
 .venv/
 
-# Python cache
-__pycache__/
-*.pyc
-
 # Environment variables
 .env
 
-# PyCharm
+# IDE
 .idea/
-
-# OS
-.DS_Store
+.vscode/
