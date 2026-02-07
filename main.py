@@ -17,7 +17,7 @@ API_KEY =os.getenv("API_KEY")
 
 app = Flask(__name__)
 #app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY") or "dev-secret-key"
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 print("SECRET_KEY =", app.config["SECRET_KEY"])
