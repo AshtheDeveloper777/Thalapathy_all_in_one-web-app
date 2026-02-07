@@ -24,8 +24,20 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 print("SECRET_KEY =", app.config["SECRET_KEY"])
+if not API_KEY:
+    raise RuntimeError("TMDB_API_KEY missing")
 
+def tmdb_get(url, params=None):
+    params = params or {}
+    params["api_key"] = API_KEY
 
+    r = requests.get(url, params=params, timeout=10)
+    data = r.json()
+
+    if r.status_code != 200 or data.get("success") is False:
+        return None, data.get("status_message", "TMDB error")
+
+    return data, None
 
 
 Bootstrap(app)
