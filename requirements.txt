@@ -1,6 +1,6 @@
-Flask
-Flask-Bootstrap
-Flask-WTF
+Flask==2.2.5
+Werkzeug==2.2.3
+Flask-WTF==1.1.1
 Flask-SQLAlchemy
+Flask-Bootstrap5
 requests
-gunicorn
