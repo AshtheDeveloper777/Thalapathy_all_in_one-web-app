@@ -5,4 +5,5 @@ Flask-SQLAlchemy
 Flask-Bootstrap5
 requests
 python-dotenv
+psycopg2-binary
 
