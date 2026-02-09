@@ -7,28 +7,22 @@ from wtforms.validators import DataRequired
 import requests
 import os
 
-# ================= TMDB CONFIG =================
+
 TMDB_SEARCH_URL = os.environ.get("TMDB_SEARCH_URL")
 TMDB_MOVIE_DETAILS_URL = os.environ.get("TMDB_MOVIE_DETAILS_URL")
 TMDB_IMAGE_BASE_URL = os.environ.get("TMDB_IMAGE_BASE_URL")
-API_KEY = os.environ.get("API_KEY")
+API_KEY =os.environ.get("API_KEY")
 
-# ================= FLASK APP =================
+
+
 app = Flask(__name__)
-
-# ---- SECRET KEY (CSRF FIX) ----
-app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY",
-    "dev-secret-key"
-)
-
-# ---- DATABASE FIX (Vercel / Supabase / Neon) ----
-db_url = os.environ.get("DATABASE_URL")
-if db_url and db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-
-app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+#app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+print("SECRET_KEY =", app.config["SECRET_KEY"])
+
+
 
 Bootstrap(app)
 db = SQLAlchemy(app)
@@ -37,17 +31,17 @@ db = SQLAlchemy(app)
 class Movie(db.Model):
     __tablename__ = "movies"
     from sqlalchemy import Text
-
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(250), nullable=False)
     year = db.Column(db.Integer)
-    description = db.Column(Text)
+    description = db.Column(Text)   # ✅ CHANGE HERE
     rating = db.Column(db.Float)
     ranking = db.Column(db.Integer)
     review = db.Column(db.String(250))
     img_url = db.Column(db.String(500))
 
-# Create tables
+
+
 with app.app_context():
     db.create_all()
 
@@ -55,6 +49,7 @@ with app.app_context():
 class MovieForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired()])
     submit = SubmitField("Submit")
+
 
 class RateMovieForm(FlaskForm):
     rating = StringField("Your Rating Out of 10")
@@ -73,6 +68,7 @@ def home():
     db.session.commit()
     return render_template("index.html", movies=movies)
 
+
 @app.route("/edit", methods=["GET", "POST"])
 def rate_movie():
     form = RateMovieForm()
@@ -87,6 +83,7 @@ def rate_movie():
 
     return render_template("edit.html", movie=movie, form=form)
 
+
 @app.route("/delete")
 def delete_movie():
     movie_id = request.args.get("id")
@@ -95,10 +92,10 @@ def delete_movie():
     db.session.commit()
     return redirect(url_for("home"))
 
+
 @app.route("/add", methods=["GET", "POST"])
 def add_movie():
     form = MovieForm()
-
     if form.validate_on_submit():
         response = requests.get(
             TMDB_SEARCH_URL,
@@ -109,6 +106,7 @@ def add_movie():
         return render_template("select.html", options=response.json()["results"])
 
     return render_template("add.html", form=form)
+
 
 @app.route("/find")
 def find_movie():
@@ -132,11 +130,10 @@ def find_movie():
 
         db.session.add(new_movie)
         db.session.commit()
-
         return redirect(url_for("rate_movie", id=new_movie.id))
 
     return redirect(url_for("home"))
 
-# ================= LOCAL RUN =================
+
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
