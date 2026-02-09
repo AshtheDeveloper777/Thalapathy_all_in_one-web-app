@@ -1,142 +1,69 @@
-from flask import Flask, render_template, redirect, url_for, request
-from flask_bootstrap5 import Bootstrap
-from flask_sqlalchemy import SQLAlchemy
-from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
-import requests
 import os
+import requests
+from flask import Flask, render_template, request, redirect, url_for
 
-# ================= TMDB CONFIG =================
-TMDB_SEARCH_URL = os.environ.get("TMDB_SEARCH_URL")
-TMDB_MOVIE_DETAILS_URL = os.environ.get("TMDB_MOVIE_DETAILS_URL")
-TMDB_IMAGE_BASE_URL = os.environ.get("TMDB_IMAGE_BASE_URL")
-API_KEY = os.environ.get("API_KEY")
-
-# ================= FLASK APP =================
 app = Flask(__name__)
 
-# ---- SECRET KEY (CSRF FIX) ----
-app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY",
-    "dev-secret-key"
-)
+TMDB_API_KEY = os.environ.get("API_KEY")
+TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
 
-# ---- DATABASE FIX (Vercel / Supabase / Neon) ----
-db_url = os.environ.get("DATABASE_URL")
-if db_url and db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-Bootstrap(app)
-db = SQLAlchemy(app)
-
-# ================= DATABASE MODEL =================
-class Movie(db.Model):
-    __tablename__ = "movies"
-    from sqlalchemy import Text
-
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(250), nullable=False)
-    year = db.Column(db.Integer)
-    description = db.Column(Text)
-    rating = db.Column(db.Float)
-    ranking = db.Column(db.Integer)
-    review = db.Column(db.String(250))
-    img_url = db.Column(db.String(500))
-
-# Create tables
-with app.app_context():
-    db.create_all()
-
-# ================= FORMS =================
-class MovieForm(FlaskForm):
-    title = StringField("Title", validators=[DataRequired()])
-    submit = SubmitField("Submit")
-
-class RateMovieForm(FlaskForm):
-    rating = StringField("Your Rating Out of 10")
-    review = StringField("Your Review")
-    submit = SubmitField("Done")
-
-# ================= ROUTES =================
 @app.route("/")
 def home():
-    movies = Movie.query.all()
-    movies.sort(key=lambda m: m.rating or 0, reverse=True)
+    return render_template("index.html")
 
-    for i, movie in enumerate(movies):
-        movie.ranking = i + 1
-
-    db.session.commit()
-    return render_template("index.html", movies=movies)
-
-@app.route("/edit", methods=["GET", "POST"])
-def rate_movie():
-    form = RateMovieForm()
-    movie_id = request.args.get("id")
-    movie = Movie.query.get_or_404(movie_id)
-
-    if form.validate_on_submit():
-        movie.rating = float(form.rating.data)
-        movie.review = form.review.data
-        db.session.commit()
-        return redirect(url_for("home"))
-
-    return render_template("edit.html", movie=movie, form=form)
-
-@app.route("/delete")
-def delete_movie():
-    movie_id = request.args.get("id")
-    movie = Movie.query.get_or_404(movie_id)
-    db.session.delete(movie)
-    db.session.commit()
-    return redirect(url_for("home"))
 
 @app.route("/add", methods=["GET", "POST"])
 def add_movie():
-    form = MovieForm()
+    if request.method == "POST":
+        movie_name = request.form.get("movie")
+        return redirect(url_for("find_movie", title=movie_name))
+    return render_template("add.html")
 
-    if form.validate_on_submit():
-        response = requests.get(
-            TMDB_SEARCH_URL,
-            params={"api_key": API_KEY, "query": form.title.data},
-            timeout=10
-        )
-        response.raise_for_status()
-        return render_template("select.html", options=response.json()["results"])
-
-    return render_template("add.html", form=form)
 
 @app.route("/find")
 def find_movie():
-    movie_api_id = request.args.get("id")
+    title = request.args.get("title")
 
-    if movie_api_id:
-        response = requests.get(
-            f"{TMDB_MOVIE_DETAILS_URL}/{movie_api_id}",
-            params={"api_key": API_KEY},
-            timeout=10
-        )
-        response.raise_for_status()
-        data = response.json()
+    if not TMDB_API_KEY:
+        return "TMDB API key not configured", 500
 
-        new_movie = Movie(
-            title=data["title"],
-            year=int(data["release_date"].split("-")[0]),
-            img_url=f"{TMDB_IMAGE_BASE_URL}{data['poster_path']}",
-            description=data["overview"]
-        )
+    response = requests.get(
+        TMDB_SEARCH_URL,
+        params={
+            "api_key": TMDB_API_KEY,
+            "query": title
+        }
+    )
 
-        db.session.add(new_movie)
-        db.session.commit()
+    response.raise_for_status()
+    results = response.json().get("results", [])
 
-        return redirect(url_for("rate_movie", id=new_movie.id))
+    movies = []
 
-    return redirect(url_for("home"))
+    for data in results:
+        release_date = data.get("release_date") or ""
+        year = None
 
-# ================= LOCAL RUN =================
+        if release_date:
+            try:
+                year = int(release_date.split("-")[0])
+            except ValueError:
+                year = None
+
+        movies.append({
+            "id": data.get("id"),
+            "title": data.get("title"),
+            "year": year,
+            "overview": data.get("overview"),
+            "poster": (
+                f"https://image.tmdb.org/t/p/w500{data['poster_path']}"
+                if data.get("poster_path") else None
+            )
+        })
+
+    return render_template("select.html", movies=movies)
+
+
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=True)
